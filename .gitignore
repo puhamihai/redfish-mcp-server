@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+config.json
+config.local.json
+
+# Site-local example overrides — keep real-fleet templates out of git
+*.local.json
+*.example.local
+env.example.local
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store

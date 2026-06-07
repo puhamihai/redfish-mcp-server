@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "server1": {
+      "host": "192.0.2.10",
+      "username": "root",
+      "password": "REPLACE_ME",
+      "verify_ssl": false,
+      "label": "Dell PowerEdge R630 — primary"
+    },
+    "server2": {
+      "host": "192.0.2.11",
+      "username": "root",
+      "password": "REPLACE_ME",
+      "verify_ssl": false,
+      "label": "Dell PowerEdge R630 — secondary"
+    }
+  },
+  "default_server": "server1"
+}
