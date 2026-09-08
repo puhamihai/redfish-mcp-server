@@ -8,15 +8,39 @@ X-Auth-Token. Sessions are re-established lazily on 401.
 from __future__ import annotations
 
 import logging
+import ssl
 from typing import Any, Optional
 
 import requests
+from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
 from urllib3.exceptions import InsecureRequestWarning
+from urllib3.util.ssl_ import create_urllib3_context
 
 from .config import ServerConfig
 
 logger = logging.getLogger(__name__)
+
+
+class _LegacyTLSAdapter(HTTPAdapter):
+    """Accept the weak TLS parameters of older BMCs (e.g. iDRAC7/8 ship
+    small DH keys that OpenSSL 3 rejects with DH_KEY_TOO_SMALL)."""
+
+    def _ctx(self) -> ssl.SSLContext:
+        ctx = create_urllib3_context()
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
+        ctx.minimum_version = ssl.TLSVersion.TLSv1
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["ssl_context"] = self._ctx()
+        return super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, *args, **kwargs):
+        kwargs["ssl_context"] = self._ctx()
+        return super().proxy_manager_for(*args, **kwargs)
 
 
 class RedfishError(RuntimeError):
@@ -37,6 +61,10 @@ class RedfishClient:
         if not server.verify_ssl:
             # Suppress per-request warnings; emit one informational note.
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+            # Old BMC firmware negotiates TLS parameters that OpenSSL 3
+            # refuses at default security level; relax only when the user
+            # already opted out of verification.
+            self._http.mount("https://", _LegacyTLSAdapter())
             logger.debug(
                 "TLS verification disabled for %s (%s)", server.id, server.host
             )
