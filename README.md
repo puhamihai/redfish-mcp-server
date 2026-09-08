@@ -124,6 +124,12 @@ single-host instance per BMC.
 - On 401 mid-session, re-authenticates once and retries.
 - TLS verification defaults to **off** (BMCs typically ship self-signed certs);
   set `verify_ssl: true` per-server in `config.json` if you've installed a CA.
+- With `verify_ssl` **off**, the HTTPS adapter also drops to OpenSSL security
+  level 0 and permits TLS 1.0+, so legacy firmware (iDRAC7/8 and similar) that
+  offers small DH keys completes the handshake instead of failing with
+  `DH_KEY_TOO_SMALL`. This weakens the connection beyond skipping certificate
+  checks, so prefer `verify_ssl: true` on any BMC whose firmware supports
+  modern TLS — those servers keep the stock, strict context.
 
 ## Usage examples
 
